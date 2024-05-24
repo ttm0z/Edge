@@ -28,17 +28,37 @@ const char* spritesheetTexturePath;
 PlayerSprite::PlayerSprite(
     const char* spritesheetPath,
     const char* vertexShaderPath,
-    const char* fragmentShaderPath
+    const char* fragmentShaderPath,
+    float spritesheet_width,
+    float spritesheet_height
     ) 
 {
     vertexPath = vertexShaderPath;
     fragmentPath = fragmentShaderPath;
-    spritesheetTexturePath = spritesheetPath;   
+    spritesheetTexturePath = spritesheetPath; 
+    m_spritesheetWidth  = spritesheet_width;
+    m_spritesheetHeight = spritesheet_height;
+    m_spritesheet_frame = 0;
+    m_spriteDirection = InputAction::null;
+    directionMap = {
+        {InputAction::Up, 3},
+        {InputAction::Down, 0},
+        {InputAction::Left, 1},
+        {InputAction::Right, 2},
+    };
     std::cout << "player character initialized" << std::endl;
 
 };
 
+void PlayerSprite::updateSpriteFrame(){
+    m_spritesheet_frame += 1;
+    if(m_spritesheet_frame == m_spritesheetWidth)
+        m_spritesheet_frame = 0;
+}
 
+void PlayerSprite::updateDirection(InputAction dir){
+    m_spriteDirection = dir;
+}
 
 void PlayerSprite::init() {
 
@@ -90,7 +110,7 @@ void PlayerSprite::init() {
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 }
 
-void PlayerSprite::render(int spritesheet_frame, int direction){
+void PlayerSprite::render(){
         glBindTexture(GL_TEXTURE_2D, m_spriteTexture);
         GLuint modelLoc = glGetUniformLocation(m_playerShader, "model");
 
@@ -104,14 +124,16 @@ void PlayerSprite::render(int spritesheet_frame, int direction){
         // get texture coordinates based on spritesheet frame
         // 0 front, 1 right, 2 left, 4 back
         //replace 5 and 4 with spritesheet width and height
+        float direction = (float)directionMap[m_spriteDirection];
+
         float spriteTexCoords[] = {
-        (0.0f + (1.0f * spritesheet_frame))  / 5.0f, (1.0f + (1.0f * direction)) / 4.0f, // Top Left (Vertex 1)
-        (1.0f + (1.0f * spritesheet_frame)) / 5.0f, (1.0f + (1.0f * direction)) / 4.0f, // Top Right (Vertex 2)
-        (0.0f + (1.0f * spritesheet_frame)) / 5.0f, (0.0f + (1.0f * direction)) / 4.0f, // Bottom Left (Vertex 3)
+        (0.0f + (1.0f * m_spritesheet_frame))  / m_spritesheetWidth, (1.0f + (1.0f * direction)) / m_spritesheetHeight, // Top Left (Vertex 1)
+        (1.0f + (1.0f * m_spritesheet_frame)) / m_spritesheetWidth, (1.0f + (1.0f * direction)) / m_spritesheetHeight, // Top Right (Vertex 2)
+        (0.0f + (1.0f * m_spritesheet_frame)) / m_spritesheetWidth, (0.0f + (1.0f * direction)) / m_spritesheetHeight, // Bottom Left (Vertex 3)
     
-        (1.0f + (1.0f * spritesheet_frame))  / 5.0f, (1.0f + (1.0f * direction)) / 4.0f, // Top Right (Vertex 4)
-        (0.0f + (1.0f * spritesheet_frame))  / 5.0f, (0.0f + (1.0f * direction)) / 4.0f, // Bottom Left (Vertex 5)
-        (1.0f + (1.0f * spritesheet_frame))  / 5.0f, (0.0f + (1.0f * direction)) / 4.0f  // Bottom Right (Vertex 6)
+        (1.0f + (1.0f * m_spritesheet_frame))  / m_spritesheetWidth, (1.0f + (1.0f * direction)) / m_spritesheetHeight, // Top Right (Vertex 4)
+        (0.0f + (1.0f * m_spritesheet_frame))  / m_spritesheetWidth, (0.0f + (1.0f * direction)) / m_spritesheetHeight, // Bottom Left (Vertex 5)
+        (1.0f + (1.0f * m_spritesheet_frame))  / m_spritesheetWidth, (0.0f + (1.0f * direction)) / m_spritesheetHeight  // Bottom Right (Vertex 6)
     };
 
 

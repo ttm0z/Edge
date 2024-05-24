@@ -17,7 +17,7 @@ Game::Game()
         100,
         100
     ),
-    player("./assets/redspritesheet.png", "./shaders/tileVert.glsl", "./shaders/tileFrag.glsl"),
+    player("./assets/redspritesheet.png", "./shaders/tileVert.glsl", "./shaders/tileFrag.glsl", 5.0f, 4.0f),
     lastPrintTime(Clock::now()),
     camera(200.0,200.0,800.0,800.0),
     animationTimer(0.0)
@@ -84,14 +84,11 @@ void Game::run()
                     break;
             
             }
-
-            if(dir != InputAction::null && animationTimer > 0.2){
-                spriteSheetFrame += 1;
-
-                if (spriteSheetFrame == 4) {
-                    spriteSheetFrame = 0;
-                }
             
+            //update animations
+            if(dir != InputAction::null && animationTimer > 0.2){
+                player.updateDirection(dir);
+                player.updateSpriteFrame();
                 animationTimer = 0.0; // Reset the animation timer
             }
 
@@ -114,5 +111,5 @@ void Game::render()
     glClear(GL_COLOR_BUFFER_BIT);
     
     g_tilemap.render(camera);
-    player.render(spriteSheetFrame, playerDirection);
+    player.render();
 }

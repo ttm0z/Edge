@@ -1,62 +1,92 @@
-#ifndef SPRITE_HPP
-#define SPRITE_HPP
+#pragma once
 
+#include <GL/glew.h>
+#include <glm.hpp>
+#include <string>
 #include <vector>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include "Texture.hpp"
-#include "ShaderProgram.hpp"
+#include "LoadShader.hpp"
+#include "InputAction.hpp"
+#include <gtc/matrix_transform.hpp>
+#include "LoadTexture.hpp"
 
-class Sprite {
+#include <gtc/type_ptr.hpp> // For glm::ortho
+#include <glm.hpp>
+
+class Sprite{
+
 public:
+
     Sprite(
-        Texture spriteTexture, 
-        ShaderProgram& spriteShader, 
-        int frameWidth, 
-        int frameHeight, 
-        int numFrames, 
-        float frameTime
-    );
-
-    void initRenderData();
-    void draw();
-
+        const char* spritesheetPath,
+        const char* vertexShaderPath,
+        const char* fragmentShaderPath,
+        float spritesheet_width,
+        float spritesheet_height
+);
+    
     void setPosition(const glm::vec2& position);
+    
     void move(const glm::vec2& delta);
+    
     void setScale(const glm::vec2& scale);
+    
     void setRotation(float angle);
-    void update(float deltaTime);
+    
+    GLuint getPlayerTexture();
 
-    GLuint getTexture() const;
-    glm::vec2 getPosition() const;
-    GLuint getShaderProgram() const;
-    glm::mat4 getModelMatrix() const;
-    GLuint getVAO() const;
-    GLuint getVBO() const;
-    GLuint getTexVBO() const;
+    glm::vec2 getPosition();
 
-private:
-    GLuint m_spriteTexture;
-    GLuint m_spriteShader;
+    GLuint getShaderProgram();
+    
+    glm::mat4 getModelMatrix();
 
-    GLuint VAO, VBO, texVBO;
-    glm::vec2 position;
-    glm::vec2 scale;
-    float rotation;
-    glm::mat4 modelMatrix;
+    GLuint getVAO();
 
-    int frameWidth;
-    int frameHeight;
-    int numFrames;
-    float frameTime;
-    float currentFrameTime;
-    int currentFrame;
+    void setShaderProgram(GLuint programID);
 
-    std::vector<glm::vec2> cellPositions;
-    std::vector<glm::vec2> texCoords;
+    GLuint getVBO();
+
+    GLuint getTexVBO();
+
+    std::vector<glm::vec2> getCellPositions();
+
+    std::vector<glm::vec2> getTexCoords();
 
     void updateModelMatrix();
-    void updateTexCoords();
-};
 
-#endif
+    void updateSpriteFrame();
+
+    void updateDirection(InputAction dir);
+    
+    void init();
+    
+    void render();
+
+private:
+    
+    int m_spritesheetWidth;
+    int m_spritesheetHeight;
+    int m_spritesheet_frame;
+    InputAction m_spriteDirection;
+    std::unordered_map<InputAction, int> directionMap;
+    GLuint VAO, VBO, texVBO, EBO;
+    
+    glm::vec2 position;
+    
+    glm::vec2 scale;
+    
+    float rotation;
+    
+    glm::mat4 modelMatrix;
+
+    GLuint m_spriteTexture;
+    
+    GLuint m_playerShader;
+
+    GLuint playerTextureID;
+
+    std::vector<glm::vec2> cellPositions;
+    
+    std::vector<glm::vec2> texCoords;
+
+};

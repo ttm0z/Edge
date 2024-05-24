@@ -1,154 +1,160 @@
 #include "Sprite.hpp"
 #include <iostream>
+float spriteCellPositions[] = {
+    // Positions       
+    -1.0f,  1.0f, 0.0f,
+     1.0f,  1.0f, 0.0f,
+    -1.0f, -1.0f, 0.0f,
+    
+     1.0f,  1.0f, 0.0f,
+    -1.0f, -1.0f, 0.0f,
+     1.0f, -1.0f, 0.0f,
+};
 
-Sprite::Sprite(Texture spriteTexture, ShaderProgram& spriteShader, int frameWidth, int frameHeight, int numFrames, float frameTime) 
-:
-    m_spriteTexture(spriteTexture),
-    m_spriteShader(spriteShader),
-    frameWidth(frameWidth),
-    frameHeight(frameHeight),
-    numFrames(numFrames),
-    frameTime(frameTime),
-    currentFrameTime(0.0f),
-    currentFrame(0)
+float spriteTexCoords[] = {
+    0.0f, 0.1f, // Top Left (Vertex 1)
+    1.0f, 0.1f, // Top Right (Vertex 2)
+    0.0f, 0.0f, // Bottom Left (Vertex 3)
+    
+    1.0f, 0.1f, // Top Right (Vertex 4)
+    0.0f, 0.0f, // Bottom Left (Vertex 5)
+    1.0f, 0.0f  // Bottom Right (Vertex 6)
+};
+
+const char* vertexPath;
+const char* fragmentPath;
+const char* spritesheetTexturePath;
+
+Sprite::Sprite(
+    const char* spritesheetPath,
+    const char* vertexShaderPath,
+    const char* fragmentShaderPath,
+    float spritesheet_width,
+    float spritesheet_height
+    ) 
 {
-    cellPositions = {
-        glm::vec2(0.5f, 0.5f), // Top Right
-        glm::vec2(0.5f, -0.5f), // Bottom Right
-        glm::vec2(-0.5f, -0.5f), // Bottom Left
-        glm::vec2(-0.5f, 0.5f)  // Top Left
+    vertexPath = vertexShaderPath;
+    fragmentPath = fragmentShaderPath;
+    spritesheetTexturePath = spritesheetPath; 
+    m_spritesheetWidth  = spritesheet_width;
+    m_spritesheetHeight = spritesheet_height;
+    m_spritesheet_frame = 0;
+    m_spriteDirection = InputAction::null;
+    directionMap = {
+        {InputAction::Up, 3},
+        {InputAction::Down, 0},
+        {InputAction::Left, 1},
+        {InputAction::Right, 2},
     };
+    std::cout << "player character initialized" << std::endl;
 
-    updateTexCoords();
+};
 
-    position = glm::vec2(0.0f);
-    scale = glm::vec2(1.0f);
-    rotation = 0.0f;
-    modelMatrix = glm::mat4(1.0f);
-
-    std::cout << "sprite initialized" << std::endl;
+void Sprite::updateSpriteFrame(){
+    m_spritesheet_frame += 1;
+    if(m_spritesheet_frame == m_spritesheetWidth)
+        m_spritesheet_frame = 0;
 }
 
-void Sprite::initRenderData() {
+void Sprite::updateDirection(InputAction dir){
+    m_spriteDirection = dir;
+}
+
+void Sprite::init() {
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    m_playerShader = LoadShaders(vertexPath, fragmentPath);
+    setShaderProgram(m_playerShader);
+    m_spriteTexture = loadTexture(spritesheetTexturePath);
+    std::cout << "spritesheetTex: "<< spritesheetTexturePath << std::endl;
+    std::cout << "spritesheetTex: "<< vertexPath << std::endl;
+    std::cout << "spritesheetTex: "<< fragmentPath << std::endl;
+
+
     glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
+
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &texVBO);
 
-    glBindVertexArray(VAO);
-
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, cellPositions.size() * sizeof(glm::vec2), cellPositions.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cellPositions), spriteCellPositions, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, texVBO);
-    glBufferData(GL_ARRAY_BUFFER, texCoords.size() * sizeof(glm::vec2), texCoords.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(texCoords), spriteTexCoords, GL_STATIC_DRAW);
+
 
     // Position attribute
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-
     // Texture coord attribute
-    glBindBuffer(GL_ARRAY_BUFFER, texVBO);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+
+    GLuint shaderLoc = m_playerShader;
+
+    GLuint projectionLoc = glGetUniformLocation(shaderLoc, "projection");
+    glm::mat4 projection = glm::ortho(0.0f, (float)1.0f, 0.0f, (float)1.0f, -1.0f, 1.0f);
+    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+    GLuint viewLoc = glGetUniformLocation(shaderLoc, "view");
+    glm::mat4 view = glm::mat4(1.0f);
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+
+    GLuint modelLoc = glGetUniformLocation(shaderLoc, "model");
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), 
+    glm::vec3(0.0f, 0.0f, 1.0f)) * glm::scale(glm::mat4(1.0f), 
+    glm::vec3(1.0f, 1.0f, 1.0f));
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 }
 
-void Sprite::draw() {
-    m_spriteShader.use();
-    m_spriteShader.setMat4("model", modelMatrix);
-    m_spriteShader.setInt("spriteTexture", 0);
+void Sprite::render(){
+        glBindTexture(GL_TEXTURE_2D, m_spriteTexture);
+        GLuint modelLoc = glGetUniformLocation(m_playerShader, "model");
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, m_spriteTexture.getTextureId());
+        glm::mat4 model = 
+        glm::translate(glm::mat4(1.0f), 
+        glm::vec3(0.5f, 0.5f, 1.0f)) * 
+        glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)) * 
+        glm::scale(glm::mat4(1.0f), glm::vec3(1.0f / 10, 1.0f / 10, 1.0f));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));           
 
-    glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    glBindVertexArray(0);
-}
+        // get texture coordinates based on spritesheet frame
+        // 0 front, 1 right, 2 left, 4 back
+        //replace 5 and 4 with spritesheet width and height
+        float direction = (float)directionMap[m_spriteDirection];
 
-void Sprite::setPosition(const glm::vec2& position) {
-    this->position = position;
-    updateModelMatrix();
-}
-
-void Sprite::move(const glm::vec2& delta) {
-    position += delta;
-    updateModelMatrix();
-}
-
-void Sprite::setScale(const glm::vec2& scale) {
-    this->scale = scale;
-    updateModelMatrix();
-}
-
-void Sprite::setRotation(float angle) {
-    rotation = angle;
-    updateModelMatrix();
-}
-
-void Sprite::update(float deltaTime) {
-    currentFrameTime += deltaTime;
-    if (currentFrameTime >= frameTime) {
-        currentFrame = (currentFrame + 1) % numFrames;
-        currentFrameTime = 0.0f;
-        updateTexCoords();
-        glBindBuffer(GL_ARRAY_BUFFER, texVBO);
-        glBufferData(GL_ARRAY_BUFFER, texCoords.size() * sizeof(glm::vec2), texCoords.data(), GL_STATIC_DRAW);
-    }
-}
-
-GLuint Sprite::getTexture() const {
-    return m_spriteTexture.getTextureId();
-}
-
-glm::vec2 Sprite::getPosition() const {
-    return position;
-}
-
-GLuint Sprite::getShaderProgram() const {
-    return m_spriteShader.getProgramId();
-}
-
-glm::mat4 Sprite::getModelMatrix() const {
-    return modelMatrix;
-}
-
-GLuint Sprite::getVAO() const {
-    return VAO;
-}
-
-GLuint Sprite::getVBO() const {
-    return VBO;
-}
-
-GLuint Sprite::getTexVBO() const {
-    return texVBO;
-}
-
-void Sprite::updateModelMatrix() {
-    modelMatrix = glm::mat4(1.0f);
-    modelMatrix = glm::translate(modelMatrix, glm::vec3(position, 0.0f));
-    modelMatrix = glm::scale(modelMatrix, glm::vec3(scale, 1.0f));
-    modelMatrix = glm::rotate(modelMatrix, rotation, glm::vec3(0.0f, 0.0f, 1.0f));
-}
-
-void Sprite::updateTexCoords() {
-    float texWidth = 1.0f / (m_spriteTexture.getWidth() / frameWidth);
-    float texHeight = 1.0f / (m_spriteTexture.getHeight() / frameHeight);
-
-    int column = currentFrame % (m_spriteTexture.getWidth() / frameWidth);
-    int row = currentFrame / (m_spriteTexture.getWidth() / frameWidth);
-
-    float u = column * texWidth;
-    float v = row * texHeight;
-
-    texCoords = {
-        glm::vec2(u + texWidth, v + texHeight), // Top Right
-        glm::vec2(u + texWidth, v), // Bottom Right
-        glm::vec2(u, v), // Bottom Left
-        glm::vec2(u, v + texHeight) // Top Left
+        float spriteTexCoords[] = {
+        (0.0f + (1.0f * m_spritesheet_frame))  / m_spritesheetWidth, (1.0f + (1.0f * direction)) / m_spritesheetHeight, // Top Left (Vertex 1)
+        (1.0f + (1.0f * m_spritesheet_frame)) / m_spritesheetWidth, (1.0f + (1.0f * direction)) / m_spritesheetHeight, // Top Right (Vertex 2)
+        (0.0f + (1.0f * m_spritesheet_frame)) / m_spritesheetWidth, (0.0f + (1.0f * direction)) / m_spritesheetHeight, // Bottom Left (Vertex 3)
+    
+        (1.0f + (1.0f * m_spritesheet_frame))  / m_spritesheetWidth, (1.0f + (1.0f * direction)) / m_spritesheetHeight, // Top Right (Vertex 4)
+        (0.0f + (1.0f * m_spritesheet_frame))  / m_spritesheetWidth, (0.0f + (1.0f * direction)) / m_spritesheetHeight, // Bottom Left (Vertex 5)
+        (1.0f + (1.0f * m_spritesheet_frame))  / m_spritesheetWidth, (0.0f + (1.0f * direction)) / m_spritesheetHeight  // Bottom Right (Vertex 6)
     };
+
+
+        glBindVertexArray(VAO);
+            // bind position data
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(spriteCellPositions), spriteCellPositions, GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+
+
+        // bind texture data
+        glBindBuffer(GL_ARRAY_BUFFER, texVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(spriteTexCoords), spriteTexCoords, GL_STATIC_DRAW);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+}
+
+void Sprite::setShaderProgram(GLuint programID){
+        glUseProgram(programID);
 }

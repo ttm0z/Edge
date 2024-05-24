@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include "LoadShader.hpp"
+#include "InputAction.hpp"
 #include <gtc/matrix_transform.hpp>
 #include "LoadTexture.hpp"
 
@@ -18,7 +19,9 @@ public:
     PlayerSprite(
         const char* spritesheetPath,
         const char* vertexShaderPath,
-        const char* fragmentShaderPath
+        const char* fragmentShaderPath,
+        float spritesheet_width,
+        float spritesheet_height
 );
     
     void setPosition(const glm::vec2& position);
@@ -50,13 +53,22 @@ public:
     std::vector<glm::vec2> getTexCoords();
 
     void updateModelMatrix();
+
+    void updateSpriteFrame();
+
+    void updateDirection(InputAction dir);
     
     void init();
     
-    void render(int spritesheet_frame, int direction);
+    void render();
 
 private:
     
+    int m_spritesheetWidth;
+    int m_spritesheetHeight;
+    int m_spritesheet_frame;
+    InputAction m_spriteDirection;
+    std::unordered_map<InputAction, int> directionMap;
     GLuint VAO, VBO, texVBO, EBO;
     
     glm::vec2 position;
