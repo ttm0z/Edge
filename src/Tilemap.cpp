@@ -29,8 +29,8 @@ float tilemapTexCoords[] = {
     1.0f, 0.0f  // Bottom Right (Vertex 6)
 };
 
-const char* vertexPath;
-const char* fragmentPath;
+const char* tileMapVertexPath;
+const char* tileMapFragmentPath;
 Tilemap::Tilemap(
     const char* tileMapPath, 
     const char* textureAtlasPath,
@@ -54,8 +54,8 @@ Tilemap::Tilemap(
     tileVAO(0), tileVBO(0), tileTexVBO(0)
 
 {
-    vertexPath = vertexShaderPath;
-    fragmentPath = fragmentShaderPath;
+    tileMapVertexPath = vertexShaderPath;
+    tileMapFragmentPath = fragmentShaderPath;
 
 }
 
@@ -112,7 +112,7 @@ void Tilemap::init(){
     
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    m_shaderId = LoadShaders(vertexPath, fragmentPath);
+    m_shaderId = LoadShaders(tileMapVertexPath, tileMapFragmentPath);
     setShaderProgram(m_shaderId);
     m_atlasTable =         
         {

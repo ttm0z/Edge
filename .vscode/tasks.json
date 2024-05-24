@@ -9,6 +9,7 @@
                 "-g",
                 "${file}",
                 "../util/LoadShader.cpp",
+                "../util/LoadTexture.cpp",
                 "${workspaceFolder}\\src\\Game.cpp",
                 "${workspaceFolder}\\src\\CellularAutomataMap.cpp",
                 "${workspaceFolder}\\src\\InputManager.cpp",

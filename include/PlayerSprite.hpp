@@ -6,6 +6,8 @@
 #include <vector>
 #include "LoadShader.hpp"
 #include <gtc/matrix_transform.hpp>
+#include "LoadTexture.hpp"
+
 #include <gtc/type_ptr.hpp> // For glm::ortho
 #include <glm.hpp>
 
@@ -38,6 +40,7 @@ public:
     GLuint getVAO();
 
     void setShaderProgram(GLuint programID);
+
     GLuint getVBO();
 
     GLuint getTexVBO();
@@ -50,7 +53,7 @@ public:
     
     void init();
     
-    void render();
+    void render(int spritesheet_frame, int direction);
 
 private:
     

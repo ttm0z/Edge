@@ -6,6 +6,7 @@
 #include <glm.hpp>
 #include <string>
 #include "LoadShader.hpp"
+#include "LoadTexture.hpp"
 #include <tmxlite/Map.hpp>
 #include "Camera.hpp"
 #include <tmxlite/TileLayer.hpp>
@@ -30,7 +31,6 @@ public:
     );
     
     void init();
-    GLuint loadTexture(const std::string& filename);
 
     tmx::Map getTilemap();
     void render(Camera camera);

@@ -2,6 +2,7 @@
 #include "Tilemap.hpp"
 #include <iostream>
 
+int playerDirection, spriteSheetFrame;
 
 Game::Game()
     : window(800, 800, "Game"), 
@@ -18,7 +19,8 @@ Game::Game()
     ),
     player("./assets/redspritesheet.png", "./shaders/tileVert.glsl", "./shaders/tileFrag.glsl"),
     lastPrintTime(Clock::now()),
-    camera(200.0,200.0,800.0,800.0)
+    camera(200.0,200.0,800.0,800.0),
+    animationTimer(0.0)
 {
     // initialize glew
     glewExperimental = GL_TRUE;
@@ -27,8 +29,8 @@ Game::Game()
         exit(EXIT_FAILURE);
     }
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
-
+    spriteSheetFrame = 0;
+    playerDirection = 0;
 }
 
 
@@ -43,7 +45,8 @@ void Game::run()
     double lastFrameTime = glfwGetTime();
     const float frameRate = 1.0f / 60.0f;
     
-    
+    player.init();
+
     g_tilemap.init();
     g_tilemap.LoadAtlas("./assets/SimpleTextureAtlas1.png");
     g_tilemap.LoadTilemap("./assets/desert_test_map.tmx");
@@ -53,27 +56,45 @@ void Game::run()
         double currentFrameTime = glfwGetTime();
         double deltaTime = currentFrameTime - lastFrameTime;
         
+        animationTimer += deltaTime;
         
-        InputAction dir = inputManager.getDirection();
-        
-        inputManager.getMouseClickCoordinates();
-        switch(dir){
-            case(InputAction::Up):                
-                camera.translateCamera(0.0, 1.0);
-                break;
+            InputAction dir = inputManager.getDirection();
             
-            case(InputAction::Down):
-                camera.translateCamera(0.0, -1.0);
-                break;
+            inputManager.getMouseClickCoordinates();
+
+            switch(dir){
+                case(InputAction::Up):                
+                    camera.translateCamera(0.0, 1.0);
+                    playerDirection = 3;
+                    break;
+                
+                case(InputAction::Down):
+                    camera.translateCamera(0.0, -1.0);
+                    playerDirection = 0;
+                    break;
+                
+                case(InputAction::Left):
+                    camera.translateCamera(-1.0, 0.0);
+                    playerDirection = 1;
+                    break;
+                
+                case(InputAction::Right):
+                    camera.translateCamera(1.0, 0.0);
+                    playerDirection = 2;
+                    break;
             
-            case(InputAction::Left):
-                camera.translateCamera(-1.0, 0.0);
-                break;
+            }
+
+            if(dir != InputAction::null && animationTimer > 0.2){
+                spriteSheetFrame += 1;
+
+                if (spriteSheetFrame == 4) {
+                    spriteSheetFrame = 0;
+                }
             
-            case(InputAction::Right):
-                camera.translateCamera(1.0, 0.0);
-                break;
-        }
+                animationTimer = 0.0; // Reset the animation timer
+            }
+
         update(deltaTime);
         lastFrameTime = currentFrameTime;
         render();
@@ -90,9 +111,8 @@ void Game::update(int deltaTime)
 
 void Game::render()
 {
-
     glClear(GL_COLOR_BUFFER_BIT);
     
     g_tilemap.render(camera);
-    player.render();
+    player.render(spriteSheetFrame, playerDirection);
 }

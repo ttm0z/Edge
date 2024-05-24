@@ -47,6 +47,9 @@ void PlayerSprite::init() {
     m_playerShader = LoadShaders(vertexPath, fragmentPath);
     setShaderProgram(m_playerShader);
     m_spriteTexture = loadTexture(spritesheetTexturePath);
+    std::cout << "spritesheetTex: "<< spritesheetTexturePath << std::endl;
+    std::cout << "spritesheetTex: "<< vertexPath << std::endl;
+    std::cout << "spritesheetTex: "<< fragmentPath << std::endl;
 
 
     glGenVertexArrays(1, &VAO);
@@ -56,10 +59,10 @@ void PlayerSprite::init() {
     glGenBuffers(1, &texVBO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cellPositions), cellPositions.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cellPositions), spriteCellPositions, GL_STATIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, texVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(texCoords), texCoords.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(texCoords), spriteTexCoords, GL_STATIC_DRAW);
 
 
     // Position attribute
@@ -69,8 +72,6 @@ void PlayerSprite::init() {
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
 
     GLuint shaderLoc = m_playerShader;
 
@@ -89,7 +90,7 @@ void PlayerSprite::init() {
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 }
 
-void PlayerSprite::render(){
+void PlayerSprite::render(int spritesheet_frame, int direction){
         glBindTexture(GL_TEXTURE_2D, m_spriteTexture);
         GLuint modelLoc = glGetUniformLocation(m_playerShader, "model");
 
@@ -97,8 +98,22 @@ void PlayerSprite::render(){
         glm::translate(glm::mat4(1.0f), 
         glm::vec3(0.5f, 0.5f, 1.0f)) * 
         glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)) * 
-        glm::scale(glm::mat4(1.0f), glm::vec3(1.0f / 25, 1.0f / 25, 1.0f));
+        glm::scale(glm::mat4(1.0f), glm::vec3(1.0f / 10, 1.0f / 10, 1.0f));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));           
+
+        // get texture coordinates based on spritesheet frame
+        // 0 front, 1 right, 2 left, 4 back
+        //replace 5 and 4 with spritesheet width and height
+        float spriteTexCoords[] = {
+        (0.0f + (1.0f * spritesheet_frame))  / 5.0f, (1.0f + (1.0f * direction)) / 4.0f, // Top Left (Vertex 1)
+        (1.0f + (1.0f * spritesheet_frame)) / 5.0f, (1.0f + (1.0f * direction)) / 4.0f, // Top Right (Vertex 2)
+        (0.0f + (1.0f * spritesheet_frame)) / 5.0f, (0.0f + (1.0f * direction)) / 4.0f, // Bottom Left (Vertex 3)
+    
+        (1.0f + (1.0f * spritesheet_frame))  / 5.0f, (1.0f + (1.0f * direction)) / 4.0f, // Top Right (Vertex 4)
+        (0.0f + (1.0f * spritesheet_frame))  / 5.0f, (0.0f + (1.0f * direction)) / 4.0f, // Bottom Left (Vertex 5)
+        (1.0f + (1.0f * spritesheet_frame))  / 5.0f, (0.0f + (1.0f * direction)) / 4.0f  // Bottom Right (Vertex 6)
+    };
+
 
         glBindVertexArray(VAO);
             // bind position data

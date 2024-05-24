@@ -27,6 +27,7 @@ public:
     int screenHeight;
     double mouseX;
     double mouseY;
+    double animationTimer; 
     TimePoint lastPrintTime;
 
 private:
